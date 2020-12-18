@@ -44,8 +44,8 @@ def parse_args():
     parser.add_argument("--exp_name", default="local", type=str)
     parser.add_argument("--log_interval", default=1000, type=int)
     parser.add_argument("--work_dir", default=".", type=str)
-    parser.add_argument("--save_tb", default=False, action="store_true")
-    parser.add_argument("--save_model", default=False, action="store_true")
+    parser.add_argument("--save_tb", default=True, action="store_true")
+    parser.add_argument("--save_model", default=True, action="store_true")
     parser.add_argument("--save_buffer", default=False, action="store_true")
     parser.add_argument("--save_video", default=False, action="store_true")
 
@@ -176,7 +176,7 @@ def main(args):
                     test_error = F.mse_loss(pred_next_latent, true_next_latent)
                 logging_dict["eval_model_error"].append(test_error.item())
                 print(f"Mean test set error: {test_error}")
-            torch.save(logging_dict, os.path.join(args.work_dir, "logging_dict.pt"))
+            torch.save(logging_dict, os.path.join(args.work_dir, f"logging_dict-{iteration}.pt"))
 
 
 if __name__ == "__main__":

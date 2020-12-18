@@ -38,6 +38,7 @@ def parse_log_files(
     file_name_template, key_name, value_names, num_seeds, best_k=None, max_key=False
 ):
     all_values = defaultdict(list)
+    value_name, all_keys, keys = None, None, None
     for value_name in value_names:
         all_keys = []
         actual_keys = None

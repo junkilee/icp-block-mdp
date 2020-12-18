@@ -1,22 +1,10 @@
-#!/usr/bin/env python3
-
-# Copyright (c) Facebook, Inc. and its affiliates.
-
-import copy
-import math
-import os
-import pickle as pkl
-import sys
 import time
+import os
 
-import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
-import dmc2gym
 import hydra
-import utils
+from .utils import set_seed_everywhere, make_env, eval_mode
 from .logger import Logger
 from .replay_buffer import MultiEnvReplayBuffer
 from .video import VideoRecorder
@@ -24,11 +12,13 @@ from .video import VideoRecorder
 
 class Workspace(object):
     def __init__(self, cfg):
+        # set work directory
         self.work_dir = os.getcwd()
         print(f"workspace: {self.work_dir}")
 
         self.cfg = cfg
 
+        # set logger
         self.logger = Logger(
             self.work_dir,
             save_tb=cfg.log_save_tb,
@@ -36,15 +26,19 @@ class Workspace(object):
             agent=cfg.agent.name,
         )
 
-        utils.set_seed_everywhere(cfg.seed)
+        # set seed, device
+        set_seed_everywhere(cfg.seed)
         self.device = torch.device(cfg.device)
-        self.train_envs, self.test_envs = utils.make_env(cfg)
+        # make environment
+        self.train_envs, self.test_envs = make_env(cfg)
 
+        # get noise dimension and set agent's observation dimension
         if cfg.noise_dims == -1:
             cfg.noise_dims = self.train_envs[0].observation_space.shape[0]
         cfg.agent.params.obs_dim = (
             self.train_envs[0].observation_space.shape[0] + cfg.noise_dims + 1
         )
+        # set action dimension and range of agent
         cfg.agent.params.action_dim = self.train_envs[0].action_space.shape[0]
         if cfg.agent.name != "sac":
             cfg.agent.params.num_envs = cfg.num_train_envs
@@ -52,8 +46,10 @@ class Workspace(object):
             float(self.train_envs[0].action_space.low.min()),
             float(self.train_envs[0].action_space.high.max()),
         ]
+        # instantiate agent
         self.agent = hydra.utils.instantiate(cfg.agent)
 
+        # setup replay buffer
         self.replay_buffer = MultiEnvReplayBuffer(
             (cfg.agent.params.obs_dim,),  # hard coded
             self.train_envs[0].action_space.shape,
@@ -62,7 +58,9 @@ class Workspace(object):
             num_envs=cfg.num_train_envs,
         )
 
+        # setup video recorder
         self.video_recorder = VideoRecorder(self.work_dir if cfg.save_video else None)
+        # ??
         self.step = [0] * cfg.num_train_envs
 
     def evaluate(self, env, train=False):
@@ -73,7 +71,7 @@ class Workspace(object):
             done = False
             episode_reward = 0
             while not done:
-                with utils.eval_mode(self.agent):
+                with eval_mode(self.agent):
                     action = self.agent.act(obs, sample=False)
                 obs, reward, done, _ = env.step(action)
                 self.video_recorder.record(env)
@@ -139,7 +137,7 @@ class Workspace(object):
                 if self.step[e_idx] < self.cfg.num_seed_steps:
                     action = env.action_space.sample()
                 else:
-                    with utils.eval_mode(self.agent):
+                    with eval_mode(self.agent):
                         action = self.agent.act(obs[e_idx], sample=True)
 
                 # run training update

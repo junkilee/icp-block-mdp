@@ -33,14 +33,14 @@ def irm_penalty(logits, labels):
     return torch.sum(grad ** 2)
 
 
-class SACAgent(Agent):
-    """SAC algorithm."""
+class PPOAgent(Agent):
+    """PPO algorithm."""
 
     def __init__(
         self,
-        obs_dim,            # observation dimension
-        action_dim,         # action dimension        
-        action_range,       # action range (continuous)
+        obs_dim,
+        action_dim,
+        action_range,
         device,
         encoder_type,
         encoder_feature_dim,
@@ -145,7 +145,7 @@ class SACAgent(Agent):
                 L1_reg = L1_reg + torch.norm(param, 1)
 
         # Optimize the critic
-        self.critic_optimizer.zero_grad()
+        self.critic_optimizer.zero_grad() 
         (critic_loss + 1e-5 * L1_reg).backward()
         self.critic_optimizer.step()
 
@@ -195,7 +195,7 @@ class SACAgent(Agent):
 
 
 class CausalAgent(Agent):
-    """SAC algorithm."""
+    """PPO algorithm."""
 
     def __init__(
         self,

@@ -1,0 +1,42 @@
+defaults:
+    - agent: sac
+
+env: cartpole
+
+# this needs to be specified manually
+experiment: test_exp
+
+num_train_envs: 3
+train_env_start_state_modes: ["gym_wrappers.StartStateMode.DESIGNATED_POSITIONS",
+                              "gym_wrappers.StartStateMode.DESIGNATED_POSITIONS",
+                              "gym_wrappers.StartStateMode.DESIGNATED_POSITIONS"]
+train_env_start_states: [[-4.0], [0.0], [4.0]]
+
+test_env_start_state_modes: ["gym_wrappers.StartStateMode.UNIFORM"]
+test_env_start_states: [[-4.8, 4.8]]
+
+num_train_steps: 10000
+replay_buffer_capacity: ${num_train_steps}
+
+# random policy로 초기에 data collection함.
+num_seed_steps: 500
+
+eval_frequency: 10000
+num_eval_episodes: 10
+
+device: cpu
+
+# logger
+log_frequency: 10000
+log_save_tb: true
+
+# video recorder
+save_video: false
+
+seed: 1
+
+# hydra configuration
+hydra:
+    name: ${env}
+    run:
+        dir: ./${env}/${agent.name}_${experiment}

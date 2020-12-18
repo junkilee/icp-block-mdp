@@ -87,6 +87,7 @@ def collect_random_data(env, env_id, num_samples, replay_buffer, save_video=Fals
         if done:
             obs = env.reset()
             if save_video:
+                print("video-length = {}".format(len(frames)))
                 skvideo.io.vwrite(f"video/{str(env)}_{env.bg_color}.mp4", frames)
                 save_video = False
     return replay_buffer

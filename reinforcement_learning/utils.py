@@ -14,7 +14,8 @@ from numpy import linalg as LA
 from torch import distributions as pyd
 from torch import nn
 
-import dmc2gym
+from .dmc2gym import dmc2gym_make
+from .gym_wrappers import make as gym_make
 
 
 def create_orthonormal_matrix(p):
@@ -26,6 +27,40 @@ def create_orthonormal_matrix(p):
     vals, vecs = LA.eig(P)
     w = vecs[:, 0:p]
     return w
+
+
+def gym_make_env(cfg):
+    """Helper function to create dm_control environment"""
+    domain_name = cfg.env.split("_")[0]
+    task_name = "_".join(cfg.env.split("_")[1:])
+
+    train_envs = [
+        gym_make(
+            domain_name=domain_name,
+            task_name=task_name,
+            noise=cfg.noise,            
+            idx=idx,
+            seed=cfg.seed,
+        )
+        for idx in range(cfg.num_train_envs)
+    ]
+    test_envs = [
+        gym_make(
+            domain_name=domain_name,
+            task_name=task_name,
+            noise=cfg.noise,
+            idx=idx + cfg.num_train_envs,
+            seed=cfg.seed,
+            visualize_reward=True,
+        )
+        for idx in range(len(test_factors))
+    ]
+    for env in train_envs:
+        env.seed(cfg.seed)    
+    #assert train_envs[0].action_space.low.min() >= -1
+    #assert train_envs[0].action_space.high.max() <= 1
+
+    return train_envs, test_envs
 
 
 def make_env(cfg):
@@ -44,7 +79,7 @@ def make_env(cfg):
     # train_factors = [1, 2, 3]
     # test_factors = [4]
     train_envs = [
-        dmc2gym.make(
+        dmc2gym_make(
             domain_name=domain_name,
             task_name=task_name,
             noise=cfg.noise,
@@ -56,7 +91,7 @@ def make_env(cfg):
         for idx in range(cfg.num_train_envs)
     ]
     test_envs = [
-        dmc2gym.make(
+        dmc2gym_make(
             domain_name=domain_name,
             task_name=task_name,
             noise=cfg.noise,
